@@ -1,0 +1,2 @@
+django-db-readonly>=0.5
+lxml>=4.1.1
