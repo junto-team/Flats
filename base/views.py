@@ -17,14 +17,13 @@ def yrl(request):
     xml = etree.Element('realty-feed', xmlns="http://webmaster.yandex.ru/schemas/feed/realty/2010-06")
     date_element = etree.SubElement(xml, 'generation-date')
     date_element.text = str(dt.datetime.now())
-    for i in AnysiteSiteContent.objects.filter(template=10)[:50]:
-        print(i.id)
+    for i in AnysiteSiteContent.objects.filter(template=10)[:10]:
         attrs = {}
         for j in AnysiteSiteTmplvarContentvalues.objects.filter(contentid=i.id):
             if not j.value or len(j.value) > 100:
                 continue
-            templv = AnysiteSiteTmplvars.objects.get(id=j.tmplvarid)
-            attrs[templv.name] = j.value
+            templv = AnysiteSiteTmplvars.objects.filter(id=j.tmplvarid).values('name')[0]
+            attrs[templv['name']] = j.value
         offer = etree.SubElement(xml, 'offer', internal_id=str(i.id))
         for name, val in attrs.items():
             param = etree.SubElement(offer, name)
