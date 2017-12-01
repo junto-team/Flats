@@ -1,3 +1,5 @@
+import json
+
 from django.core.management.base import BaseCommand, CommandError
 from django.apps import apps
 from base.models import *
@@ -20,8 +22,6 @@ class Command(BaseCommand):
             name = ''
             attrs = []
             for j in AnysiteSiteTmplvarContentvalues.objects.filter(contentid=i.id):
-                if not j.value or len(j.value) > 100:
-                    continue
                 templv = AnysiteSiteTmplvars.objects.get(id=j.tmplvarid)
                 if templv.name == 'objectTypeS':
                     name = j.value
@@ -44,16 +44,16 @@ class Command(BaseCommand):
         for i in AnysiteSiteContent.objects.filter(template=templ_id)[:10]:
             print(i.id)
             for j in AnysiteSiteTmplvarContentvalues.objects.filter(contentid=i.id):
-                if not j.value or len(j.value) > 100:
-                    continue
+                #if not j.value or len(j.value) > 100:
+                #    continue
+                print("\t{}".format(j.value))
                 templv = AnysiteSiteTmplvars.objects.get(id=j.tmplvarid)
-                print("\t{}, {}, {}".format(templv.name, templv.type, j.value))
+                #if 'image' in templv.name:
+                #    print("\t{}, {}, {}, {}".format(templv.name, templv.type, j.value, json.loads(j.value)[0]['image']))
                 for attr, value in templv.__dict__.items():
-                    if len(str(value)) > 100:
+                    if len(str(value)) > 1000:
                         continue
                     print("\t\t{}: {}".format(attr, value))
-
-
 
     def show_stat(self):
         print('id name amount')
@@ -65,8 +65,10 @@ class Command(BaseCommand):
         for s in reversed(stat):
             print(s[0], s[1], s[2])
 
-
     def handle(self, *args, **options):
+        #for i in AnysiteObjectspecies.objects.all():
+        #    print('"{}": "",'.format(i.name))
+        #self.show_tmplvars(10)
         self.show_content(10)
         #self.show_stat()
         #self.show_types(10)
