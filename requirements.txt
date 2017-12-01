@@ -3,3 +3,4 @@ envvars==0.3.0
 django-db-readonly>=0.5
 lxml>=4.1.1
 dj-database-url==0.4.2
+gunicorn==19.7.1
