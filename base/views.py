@@ -1,6 +1,7 @@
 from lxml import etree
 import datetime as dt
 import json
+import re
 
 from django.http import HttpResponse
 from django.template import loader
@@ -56,7 +57,7 @@ def get_comm_type(val):
         return types[val]
     except:
         if val in wrong_types.keys():
-            raise Exception('wrong object commercial type')
+            return None
 
     return val
 
@@ -139,6 +140,20 @@ def get_home_type(value):
 
 
 def append_location(offer, attrs):
+    def append_metro(tag, attrs):
+        metro_ids = attrs.get('objectMetro', '').split('||')
+        time_on_foot = attrs.get('objectDistanceMetro', '')
+        if not (attrs.get('objectMetro', '') and time_on_foot):
+            return
+
+        for i in AnysiteMetro.objects.filter(id__in=metro_ids):
+            yrl_metro = etree.SubElement(tag, 'metro')
+            yrl_metro_name = etree.SubElement(yrl_metro, 'name')
+            yrl_metro_name.text = i.name
+            yrl_foot_time = etree.SubElement(yrl_metro,
+                                             'time-on-foot')
+            yrl_foot_time.text = time_on_foot
+
     yrl_location = etree.SubElement(offer, 'location')
 
     yrl_country = etree.SubElement(yrl_location, 'country')
@@ -167,19 +182,16 @@ def append_location(offer, attrs):
             yrl_address = etree.SubElement(yrl_location, 'address')
             yrl_address.text = "{}, {}".format(street, home_numb)
 
+    if attrs.get('objectDirection', ''):
+        for direct in attrs.get('objectDirection', '').split('||'):
+            yrl_direct = etree.SubElement(yrl_location, 'direction')
+            yrl_direct.text = direct
 
-def append_metro(offer, attrs):
-    metro_ids = attrs.get('objectMetro', '').split('||')
-    time_on_foot = attrs.get('objectDistanceMetro', '')
-    if not (attrs.get('objectMetro', '') and time_on_foot):
-        return
+    if attrs.get('objectDistanceCity', ''):
+        yrl_distance = etree.SubElement(yrl_location, 'distance')
+        yrl_distance.text = attrs.get('objectDistanceCity', '')
 
-    for i in AnysiteMetro.objects.filter(id__in=metro_ids):
-        yrl_metro = etree.SubElement(offer, 'metro')
-        yrl_metro_name = etree.SubElement(yrl_metro, 'name')
-        yrl_metro_name.text = i.name
-        yrl_foot_time = etree.SubElement(yrl_metro, 'time-on-foot')
-        yrl_foot_time.text = time_on_foot
+    append_metro(yrl_location, attrs)
 
 
 def append_sales_agent(offer, attrs):
@@ -204,7 +216,6 @@ def append_sales_agent(offer, attrs):
             yrl_phone = etree.SubElement(yrl_agent, 'phone')
             yrl_phone.text = i.value
 
-
     yrl_category = etree.SubElement(yrl_agent, 'category')
     yrl_category.text = 'агентство'
 
@@ -216,12 +227,13 @@ def append_sales_agent(offer, attrs):
 
 
 def append_price(offer, attrs):
-    yrl_price = etree.SubElement(offer, 'price')
-
     value = attrs.get('object_price', '')
-    if value:
-        yrl_value = etree.SubElement(yrl_price, 'value')
-        yrl_value.text = value
+    if not value:
+        return
+
+    yrl_price = etree.SubElement(offer, 'price')
+    yrl_value = etree.SubElement(yrl_price, 'value')
+    yrl_value.text = value
 
     value = attrs.get('objectCurrency', '')
     if value:
@@ -242,12 +254,15 @@ def append_price(offer, attrs):
         yrl_commission.text = value
 
     value = attrs.get('objectTimeRent', '')
-    if value:
+    if value and 'Аренда' == attrs.get('objectType', ''):
         yrl_period = etree.SubElement(yrl_price, 'period')
         yrl_period.text = value
 
 
 def append_area(offer, attrs):
+    if not (attrs.get('objectAreaTerritory', '') and attrs.get('object_area', '')):
+        return
+
     yrl_area = etree.SubElement(offer, 'area')
 
     if attrs.get('object_area', ''):
@@ -266,32 +281,20 @@ def append_area(offer, attrs):
 
 def generate_yrl(offer, attrs):
     yrl_type = etree.SubElement(offer, 'type')
-    yrl_type.text = 'аренда' if 'Аренда' == attrs.get('objectTypeS', 'Аренда') else 'продажа'
-
-    yrl_creation_date = etree.SubElement(offer, 'creation-date')
-    yrl_creation_date.text = dt.datetime.now().isoformat()
+    yrl_type.text = 'аренда' if 'Аренда' == attrs.get('objectType', '') else 'продажа'
 
     yrl_last_update_date = etree.SubElement(offer, 'last-update-date')
     yrl_last_update_date.text = dt.datetime.now().isoformat()
 
     append_location(offer, attrs)
-    append_metro(offer, attrs)
     append_sales_agent(offer, attrs)
     append_price(offer, attrs)
     append_area(offer, attrs)
 
     if attrs.get('objectFloor', ''):
-        yrl_floor = etree.SubElement(offer, 'floor')
-        yrl_floor.text = attrs.get('objectFloor', '')
-
-    if attrs.get('objectDirection', ''):
-        for direct in attrs.get('objectDirection', '').split('||'):
-            yrl_direct = etree.SubElement(offer, 'direction')
-            yrl_direct.text = direct
-
-    if attrs.get('objectDistanceCity', ''):
-        yrl_distance = etree.SubElement(offer, 'distance')
-        yrl_distance.text = attrs.get('objectDistanceCity', '')
+        for i in attrs.get('objectFloor', '').replace(' ', '').split(','):
+            yrl_floor = etree.SubElement(offer, 'floor')
+            yrl_floor.text = i
 
     if attrs.get('objectCountRoom', ''):
         yrl_distance = etree.SubElement(offer, 'rooms')
@@ -319,23 +322,23 @@ def generate_yrl(offer, attrs):
         yrl_furniture = etree.SubElement(offer, 'room-furniture')
         yrl_furniture.text = 'да'
 
-    if attrs.get('objectFurniture', ''):
+    if attrs.get('objectPlumbing', ''):
         yrl_water = etree.SubElement(offer, 'water-supply')
         yrl_water.text = 'да'
 
-    if attrs.get('objectFurniture', ''):
+    if attrs.get('objectSewerage', ''):
         yrl_sewerage = etree.SubElement(offer, 'sewerage-supply')
         yrl_sewerage.text = 'да'
 
-    if attrs.get('objectFurniture', ''):
+    if attrs.get('objectElectricity', ''):
         yrl_electro = etree.SubElement(offer, 'electricity-supply')
         yrl_electro.text = 'да'
 
-    if attrs.get('objectFurniture', ''):
+    if attrs.get('objectGaz', ''):
         yrl_gas = etree.SubElement(offer, 'gas-supply')
         yrl_gas.text = 'да'
 
-    if attrs.get('objectFurniture', ''):
+    if attrs.get('objectHeating', ''):
         yrl_gas = etree.SubElement(offer, 'heating-supply')
         yrl_gas.text = 'да'
 
@@ -349,8 +352,12 @@ def add_extra_commercial(offer, attrs):
 
     if attrs.get('object-objectspecies', ''):
         for i in attrs.get('object-objectspecies', '').split('||'):
+            type = get_comm_type(commercial_types[i])
+            if not type:
+                continue
+
             yrl_commercial_type = etree.SubElement(offer, 'commercial-type')
-            yrl_commercial_type.text = get_comm_type(commercial_types[i])
+            yrl_commercial_type.text = type
 
 
 def add_extra_living(offer, attrs):
@@ -360,25 +367,49 @@ def add_extra_living(offer, attrs):
     yrl_deal_status = etree.SubElement(offer, 'deal-status')
     yrl_deal_status.text = 'sale'
 
-    yrl_gas = etree.SubElement(offer, 'pool')
-    yrl_gas.text = 'да' if attrs.get('objectFurniture', '') == 'yes' else 'нет'
-
     if attrs.get('objectFloorAll', ''):
-        yrl_floors_all= etree.SubElement(offer, 'floors-total')
+        yrl_floors_all = etree.SubElement(offer, 'floors-total')
         yrl_floors_all.text = attrs.get('objectFloorAll', '')
 
     if attrs.get('objectHomeHousing', ''):
-        yrl_floors_all= etree.SubElement(offer, 'building-section')
+        yrl_floors_all = etree.SubElement(offer, 'building-section')
         yrl_floors_all.text = attrs.get('objectHomeHousing', '')
 
-    if attrs.get('objectFloor', ''):
-        yrl_floor = etree.SubElement(offer, 'rooms-offered')
-        yrl_floor.text = attrs.get('objectFloor', '')
+    if attrs.get('objectCountRoom', ''):
+        yrl_rooms = etree.SubElement(offer, 'rooms-offered')
+        yrl_rooms.text = attrs.get('objectCountRoom', '')
 
-    home_type = get_home_type(attrs.get('objectFloorAll', ''))
-    if home_type:
-        yrl_floors_all = etree.SubElement(offer, 'objectHomeType')
-        yrl_floors_all.text = home_type
+    if attrs.get('objectAreaLive', ''):
+        yrl_live_space = etree.SubElement(offer, 'living-space')
+        yrl_ls_value = etree.SubElement(yrl_live_space, 'value')
+        yrl_ls_value.text = attrs.get('objectAreaLive', '')
+        yrl_ls_unit = etree.SubElement(yrl_live_space, 'unit')
+        yrl_ls_unit.text = 'кв. м'
+
+    if attrs.get('objectAreaKitchen', ''):
+        yrl_kitchen_space = etree.SubElement(offer, 'kitchen-space')
+        yrl_ks_value = etree.SubElement(yrl_kitchen_space, 'value')
+        yrl_ks_value.text = attrs.get('objectAreaKitchen', '')
+        yrl_ks_unit = etree.SubElement(yrl_kitchen_space, 'unit')
+        yrl_ks_unit.text = 'кв. м'
+
+    if attrs.get('objectAreaAllRoom', ''):
+        for i in re.split('[-/]', attrs.get('objectAreaAllRoom', '')):
+            i = i.strip()
+            if not i:
+                continue
+            yrl_room_space = etree.SubElement(offer, 'room-space')
+            yrl_rs_value = etree.SubElement(yrl_room_space, 'value')
+            yrl_rs_value.text = i
+            yrl_rs_unit = etree.SubElement(yrl_room_space, 'unit')
+            yrl_rs_unit.text = 'кв. м'
+
+    if attrs.get('objectAreaTerritory', ''):
+        yrl_lot_area = etree.SubElement(offer, 'lot-area')
+        yrl_la_value = etree.SubElement(yrl_lot_area, 'value')
+        yrl_la_value.text = attrs.get('objectAreaTerritory', '')
+        yrl_la_unit = etree.SubElement(yrl_lot_area, 'unit')
+        yrl_la_unit.text = 'кв. м'
 
     if attrs.get('object-objectspecies', ''):
         for i in attrs.get('object-objectspecies', '').split('||'):
@@ -394,8 +425,8 @@ def yrl(request):
     # Create the root element
     xml = etree.Element('realty-feed', xmlns="http://webmaster.yandex.ru/schemas/feed/realty/2010-06")
     date_element = etree.SubElement(xml, 'generation-date')
-    date_element.text = str(dt.datetime.now())
-    for i in AnysiteSiteContent.objects.filter(template=10)[:100]:
+    date_element.text = str(dt.datetime.now().isoformat())
+    for i in AnysiteSiteContent.objects.filter(template=10):
         attrs = {}
         obj_type = ''
         for j in AnysiteSiteTmplvarContentvalues.objects.filter(contentid=i.id):
@@ -405,7 +436,13 @@ def yrl(request):
                 continue
             attrs[templv['name']] = j.value
 
-        offer = etree.SubElement(xml, 'offer', internal_id=str(i.id))
+        offer = etree.SubElement(xml, 'offer', **{'internal-id': str(i.id)})
+        yrl_creation_date = etree.SubElement(offer, 'creation-date')
+        if i.publishedon:
+            yrl_creation_date.text = dt.datetime.fromtimestamp(int(i.publishedon)).isoformat()
+        else:
+            yrl_creation_date.text = dt.datetime.now().isoformat()
+
         generate_yrl(offer, attrs)
         if obj_type in ['Загородная недвижимость', 'Квартиры']:
             add_extra_living(offer, attrs)
@@ -413,6 +450,6 @@ def yrl(request):
             add_extra_commercial(offer, attrs)
 
     return HttpResponse(
-        etree.tostring(xml, encoding='UTF-8', pretty_print=True),
+        etree.tostring(xml, encoding='UTF-8', pretty_print=True, xml_declaration=True),
         content_type="application/xml"
     )
