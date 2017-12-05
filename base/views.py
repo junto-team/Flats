@@ -426,7 +426,7 @@ def yrl(request):
     xml = etree.Element('realty-feed', xmlns="http://webmaster.yandex.ru/schemas/feed/realty/2010-06")
     date_element = etree.SubElement(xml, 'generation-date')
     date_element.text = str(dt.datetime.now().isoformat())
-    for i in AnysiteSiteContent.objects.filter(template=10):
+    for i in AnysiteSiteContent.objects.filter(template=10)[:50]:
         attrs = {}
         obj_type = ''
         for j in AnysiteSiteTmplvarContentvalues.objects.filter(contentid=i.id):
