@@ -9,10 +9,6 @@ from django.utils.html import escape
 
 from base.models import *
 
-commercial_types = {}
-for i in AnysiteObjectspecies.objects.all():
-    commercial_types[str(i.id)] = i.name
-
 
 def button(request):
     template = loader.get_template('button.html')
@@ -139,19 +135,18 @@ def get_home_type(value):
         return ''
 
 
-def append_location(offer, attrs):
+def append_location(db, offer, attrs):
     def append_metro(tag, attrs):
         metro_ids = attrs.get('objectMetro', '').split('||')
         time_on_foot = attrs.get('objectDistanceMetro', '')
         if not (attrs.get('objectMetro', '') and time_on_foot):
             return
 
-        for i in AnysiteMetro.objects.filter(id__in=metro_ids):
+        for i in [i for key, i in db['metro'].items() if str(key) in metro_ids]:
             yrl_metro = etree.SubElement(tag, 'metro')
             yrl_metro_name = etree.SubElement(yrl_metro, 'name')
-            yrl_metro_name.text = i.name
-            yrl_foot_time = etree.SubElement(yrl_metro,
-                                             'time-on-foot')
+            yrl_metro_name.text = i['name']
+            yrl_foot_time = etree.SubElement(yrl_metro, 'time-on-foot')
             yrl_foot_time.text = time_on_foot
 
     yrl_location = etree.SubElement(offer, 'location')
@@ -161,7 +156,7 @@ def append_location(offer, attrs):
 
     try:
         region_id = attrs.get('objectRegions', None)
-        region = AnysiteRegions.objects.filter(id=region_id)[0].name
+        region = db['regions'][int(region_id)]['name']
         yrl_region = etree.SubElement(yrl_location, 'region')
         yrl_region.text = region
     except:
@@ -194,27 +189,27 @@ def append_location(offer, attrs):
     append_metro(yrl_location, attrs)
 
 
-def append_sales_agent(offer, attrs):
+def append_sales_agent(db, offer, attrs):
     person_id = attrs.get('objectPerson', '')
     if not person_id:
         return
 
     yrl_agent = etree.SubElement(offer, 'sales-agent')
     try:
-        ptitle = AnysiteSiteContent.objects.get(id=person_id).pagetitle
+        ptitle = db['content'][int(person_id)]['pagetitle']
     except:
         ptitle = ''
     yrl_name = etree.SubElement(yrl_agent, 'name')
     yrl_name.text = ptitle
 
-    for i in AnysiteSiteTmplvarContentvalues.objects.filter(contentid=person_id):
-        templv = AnysiteSiteTmplvars.objects.get(id=i.tmplvarid)
-        if templv.name == 'emailPerson':
+    for i in [j for j in db['tmplvarcontentvalues'].values() if j['contentid'] == int(person_id)]:
+        templv = db['tmplvars'][i['tmplvarid']]
+        if templv['name'] == 'emailPerson':
             yrl_email = etree.SubElement(yrl_agent, 'email')
-            yrl_email.text = i.value
-        if templv.name == 'phonePerson':
+            yrl_email.text = i['value']
+        if templv['name'] == 'phonePerson':
             yrl_phone = etree.SubElement(yrl_agent, 'phone')
-            yrl_phone.text = i.value
+            yrl_phone.text = i['value']
 
     yrl_category = etree.SubElement(yrl_agent, 'category')
     yrl_category.text = 'агентство'
@@ -279,15 +274,15 @@ def append_area(offer, attrs):
         yrl_unit.text = 'cотка'
 
 
-def generate_yrl(offer, attrs):
+def generate_yrl(db, offer, attrs):
     yrl_type = etree.SubElement(offer, 'type')
     yrl_type.text = 'аренда' if 'Аренда' == attrs.get('objectType', '') else 'продажа'
 
     yrl_last_update_date = etree.SubElement(offer, 'last-update-date')
     yrl_last_update_date.text = dt.datetime.now().isoformat()
 
-    append_location(offer, attrs)
-    append_sales_agent(offer, attrs)
+    append_location(db, offer, attrs)
+    append_sales_agent(db, offer, attrs)
     append_price(offer, attrs)
     append_area(offer, attrs)
 
@@ -343,7 +338,7 @@ def generate_yrl(offer, attrs):
         yrl_gas.text = 'да'
 
 
-def add_extra_commercial(offer, attrs):
+def add_extra_commercial(db, offer, attrs):
     yrl_category = etree.SubElement(offer, 'category')
     yrl_category.text = 'коммерческая'
 
@@ -352,7 +347,7 @@ def add_extra_commercial(offer, attrs):
 
     if attrs.get('object-objectspecies', ''):
         for i in attrs.get('object-objectspecies', '').split('||'):
-            type = get_comm_type(commercial_types[i])
+            type = get_comm_type(db['objectspecies'][i]['name'])
             if not type:
                 continue
 
@@ -360,7 +355,7 @@ def add_extra_commercial(offer, attrs):
             yrl_commercial_type.text = type
 
 
-def add_extra_living(offer, attrs):
+def add_extra_living(db, offer, attrs):
     yrl_deal_status = etree.SubElement(offer, 'property-type')
     yrl_deal_status.text = 'жилая'
 
@@ -413,7 +408,7 @@ def add_extra_living(offer, attrs):
 
     if attrs.get('object-objectspecies', ''):
         for i in attrs.get('object-objectspecies', '').split('||'):
-            cat = get_live_type(commercial_types[i])
+            cat = get_live_type(db['objectspecies'][i]['name'])
             if not cat:
                 continue
             yrl_category = etree.SubElement(offer, 'category')
@@ -422,34 +417,64 @@ def add_extra_living(offer, attrs):
 
 
 def yrl(request):
-    # Create the root element
+    # Download data for YRL
+    db = {
+        'content': {i['id']: {
+            'publishedon': i['publishedon'],
+            'pagetitle': i['pagetitle'],
+            'template': i['template']
+        } for i in AnysiteSiteContent.objects.all().values('id', 'publishedon', 'pagetitle', 'template')},
+        'tmplvarcontentvalues': {i['id']: {
+            'contentid': i['contentid'],
+            'tmplvarid': i['tmplvarid'],
+            'value': i['value']
+        } for i in AnysiteSiteTmplvarContentvalues.objects.all().values('id', 'contentid', 'tmplvarid', 'value')},
+        'tmplvars': {i['id']: {
+            'name': i['name']
+        } for i in AnysiteSiteTmplvars.objects.all().values('id', 'name')},
+        'regions': {i['id']: {
+            'name': i['name']
+        } for i in AnysiteRegions.objects.all().values('id', 'name')},
+        'metro': {i['id']: {
+            'name': i['name']
+        } for i in AnysiteMetro.objects.all().values('id', 'name')},
+        'objectspecies': {str(i['id']): {
+            'name': i['name']
+        } for i in AnysiteObjectspecies.objects.all().values('id', 'name')}
+    }
+
+    # Create root element
     xml = etree.Element('realty-feed', xmlns="http://webmaster.yandex.ru/schemas/feed/realty/2010-06")
     date_element = etree.SubElement(xml, 'generation-date')
     date_element.text = str(dt.datetime.now().isoformat())
-    for i in AnysiteSiteContent.objects.filter(template=10)[:10]:
+    cnt = 0
+    for content_id, content in db['content'].items():
+        if content['template'] != 10:
+            continue
+
         attrs = {}
         obj_type = ''
-        for j in AnysiteSiteTmplvarContentvalues.objects.filter(contentid=i.id):
-            templv = AnysiteSiteTmplvars.objects.filter(id=j.tmplvarid).values('name')[0]
+        for tmplvarid, value in [(i['tmplvarid'], i['value']) for i in db['tmplvarcontentvalues'].values() if i['contentid'] == content_id]:
+            templv = db['tmplvars'][tmplvarid]
             if templv['name'] == 'objectTypeS':
-                obj_type = j.value
+                obj_type = value
                 continue
-            attrs[templv['name']] = j.value
+            attrs[templv['name']] = value
 
-        offer = etree.SubElement(xml, 'offer', **{'internal-id': str(i.id)})
+        offer = etree.SubElement(xml, 'offer', **{'internal-id': str(content_id)})
         yrl_creation_date = etree.SubElement(offer, 'creation-date')
-        if i.publishedon:
-            yrl_creation_date.text = dt.datetime.fromtimestamp(int(i.publishedon)).isoformat()
+        if content['publishedon']:
+            yrl_creation_date.text = dt.datetime.fromtimestamp(int(content['publishedon'])).isoformat()
         else:
             yrl_creation_date.text = dt.datetime.now().isoformat()
 
-        generate_yrl(offer, attrs)
+        generate_yrl(db, offer, attrs)
         if obj_type in ['Загородная недвижимость', 'Квартиры']:
-            add_extra_living(offer, attrs)
+            add_extra_living(db, offer, attrs)
         elif obj_type == 'Коммерческая недвижимость':
-            add_extra_commercial(offer, attrs)
+            add_extra_commercial(db, offer, attrs)
 
     return HttpResponse(
-        etree.tostring(xml, encoding='UTF-8', pretty_print=True, xml_declaration=True),
+        etree.tostring(xml, encoding='UTF-8', xml_declaration=True),
         content_type="application/xml"
     )
