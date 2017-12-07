@@ -4,15 +4,9 @@ import json
 import re
 
 from django.http import HttpResponse
-from django.template import loader
 from django.utils.html import escape
 
 from base.models import *
-
-
-def button(request):
-    template = loader.get_template('button.html')
-    return HttpResponse(template.render({}, request))
 
 
 def get_comm_type(val):
@@ -215,7 +209,7 @@ def append_sales_agent(db, offer, attrs):
     yrl_category.text = 'агентство'
 
     yrl_organization = etree.SubElement(yrl_agent, 'organization')
-    yrl_organization.text = escape('Агентство недвижимости "Мезон&quot"')
+    yrl_organization.text = escape('Агентство недвижимости "Мезон"')
 
     yrl_url = etree.SubElement(yrl_agent, 'url')
     yrl_url.text = 'http://mezonn.ru/'
@@ -255,23 +249,20 @@ def append_price(offer, attrs):
 
 
 def append_area(offer, attrs):
-    if not (attrs.get('objectAreaTerritory', '') and attrs.get('object_area', '')):
-        return
-
-    yrl_area = etree.SubElement(offer, 'area')
-
     if attrs.get('object_area', ''):
+        yrl_area = etree.SubElement(offer, 'area')
         yrl_value = etree.SubElement(yrl_area, 'value')
         yrl_value.text = attrs.get('object_area', '')
 
         yrl_unit = etree.SubElement(yrl_area, 'unit')
         yrl_unit.text = 'кв. м'
-    else:
-        yrl_value = etree.SubElement(yrl_area, 'value')
-        yrl_value.text = attrs.get('objectAreaTerritory', '')
 
-        yrl_unit = etree.SubElement(yrl_area, 'unit')
-        yrl_unit.text = 'cотка'
+    if attrs.get('objectAreaTerritory', ''):
+        yrl_lot_area = etree.SubElement(offer, 'lot-area')
+        yrl_la_value = etree.SubElement(yrl_lot_area, 'value')
+        yrl_la_value.text = attrs.get('objectAreaTerritory', '')
+        yrl_la_unit = etree.SubElement(yrl_lot_area, 'unit')
+        yrl_la_unit.text = 'сотка'
 
 
 def generate_yrl(db, offer, attrs):
@@ -399,13 +390,6 @@ def add_extra_living(db, offer, attrs):
             yrl_rs_unit = etree.SubElement(yrl_room_space, 'unit')
             yrl_rs_unit.text = 'кв. м'
 
-    if attrs.get('objectAreaTerritory', ''):
-        yrl_lot_area = etree.SubElement(offer, 'lot-area')
-        yrl_la_value = etree.SubElement(yrl_lot_area, 'value')
-        yrl_la_value.text = attrs.get('objectAreaTerritory', '')
-        yrl_la_unit = etree.SubElement(yrl_lot_area, 'unit')
-        yrl_la_unit.text = 'кв. м'
-
     if attrs.get('object-objectspecies', ''):
         for i in attrs.get('object-objectspecies', '').split('||'):
             cat = get_live_type(db['objectspecies'][i]['name'])
@@ -421,9 +405,10 @@ def yrl(request):
     db = {
         'content': {i['id']: {
             'publishedon': i['publishedon'],
+            'parent': i['parent'],
             'pagetitle': i['pagetitle'],
             'template': i['template']
-        } for i in AnysiteSiteContent.objects.all().values('id', 'publishedon', 'pagetitle', 'template')},
+        } for i in AnysiteSiteContent.objects.filter(published=0).values('id', 'parent', 'publishedon', 'pagetitle', 'template')},
         'tmplvarcontentvalues': {i['id']: {
             'contentid': i['contentid'],
             'tmplvarid': i['tmplvarid'],
@@ -447,9 +432,10 @@ def yrl(request):
     xml = etree.Element('realty-feed', xmlns="http://webmaster.yandex.ru/schemas/feed/realty/2010-06")
     date_element = etree.SubElement(xml, 'generation-date')
     date_element.text = str(dt.datetime.now().isoformat())
-    cnt = 0
     for content_id, content in db['content'].items():
-        if content['template'] != 10:
+        # 10 - is realty object template ID
+        # 326 - id of 'Objects' folder (see manage site)
+        if content['template'] != 10 or content['parent'] != 326:
             continue
 
         attrs = {}
