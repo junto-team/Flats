@@ -408,7 +408,7 @@ def yrl(request):
             'parent': i['parent'],
             'pagetitle': i['pagetitle'],
             'template': i['template']
-        } for i in AnysiteSiteContent.objects.filter(published=0).values('id', 'parent', 'publishedon', 'pagetitle', 'template')},
+        } for i in AnysiteSiteContent.objects.filter(published=1).values('id', 'parent', 'publishedon', 'pagetitle', 'template')},
         'tmplvarcontentvalues': {i['id']: {
             'contentid': i['contentid'],
             'tmplvarid': i['tmplvarid'],
