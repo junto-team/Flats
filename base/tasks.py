@@ -400,9 +400,8 @@ def add_extra_living(db, offer, attrs):
             break
 
 
-@periodic_task(run_every=dt.timedelta(seconds=5))
+@periodic_task(run_every=dt.timedelta(seconds=60*60*12))
 def get_yrl():
-    print('AAAAAAAAAAAAA')
     # Download data for YRL
     db = {
         'content': {i['id']: {
@@ -410,7 +409,7 @@ def get_yrl():
             'parent': i['parent'],
             'pagetitle': i['pagetitle'],
             'template': i['template']
-        } for i in AnysiteSiteContent.objects.using('mezon').filter(published=1)[:10].values('id', 'parent', 'publishedon', 'pagetitle', 'template')},
+        } for i in AnysiteSiteContent.objects.using('mezon').filter(published=1).values('id', 'parent', 'publishedon', 'pagetitle', 'template')},
         'tmplvarcontentvalues': {i['id']: {
             'contentid': i['contentid'],
             'tmplvarid': i['tmplvarid'],
