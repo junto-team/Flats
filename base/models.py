@@ -1323,3 +1323,9 @@ class DjangoMigrations(models.Model):
     class Meta:
         managed = False
         db_table = 'django_migrations'
+
+
+class CeleryResults(models.Model):
+    task_key = models.IntegerField(default=0)
+    content = models.TextField(null=True)
+    updated = models.DateTimeField(auto_now=True)

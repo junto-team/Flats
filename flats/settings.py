@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 import os
 import envvars
 import dj_database_url
+import djcelery
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -34,11 +35,21 @@ DEBUG = 'DEBUG' in os.environ and os.environ['DEBUG'] == 'True'
 ALLOWED_HOSTS = ['127.0.0.1', '46.101.129.136']
 
 
+# Setup Celery
+djcelery.setup_loader()
+
+CELERYBEAT_SCHEDULER = "djcelery.schedulers.DatabaseScheduler"
+CELERY_ALWAYS_EAGER = False
+BROKER_BACKEND = "django"
+CELERY_IMPORTS = ['base.tasks']
+
+
 # Application definition
 
 INSTALLED_APPS = [
     'base',
-    'readonly',
+    'djcelery',
+    'kombu.transport.django',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,7 +61,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'readonly.middleware.DatabaseReadOnlyMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -83,23 +93,27 @@ WSGI_APPLICATION = 'flats.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    'default': {
+    'mezon': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'from_anton',
         'USER': 'anton',
         'PASSWORD': 'anton',
         'HOST': 'localhost',
         'PORT': '3306',
+    },
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 
 # Update database configuration with $DATABASE_URL.
-db_from_env = dj_database_url.config()
+db_from_env = dj_database_url.config(env='FLATS_DATABASE_URL')
 DATABASES['default'].update(db_from_env)
 DATABASES['default']['CONN_MAX_AGE'] = 120
-
-# Set to False to allow writes
-SITE_READ_ONLY = True
+db_from_env = dj_database_url.config(env='MEZON_DATABASE_URL')
+DATABASES['mezon'].update(db_from_env)
+DATABASES['mezon']['CONN_MAX_AGE'] = 120
 
 
 # Password validation
