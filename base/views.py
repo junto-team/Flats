@@ -22,7 +22,6 @@ def yrl(request):
 def manual_yrl(request):
     get_yrl.apply()
     task_result = CeleryResults.objects.using('default').get(task_key=200)
-    CeleryResults.objects.using('default').get(task_key=200).delete()
 
     return HttpResponse(
         task_result.content,
