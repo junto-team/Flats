@@ -52,7 +52,11 @@ def get_comm_type(val):
     return val
 
 
-def get_live_type(val):
+def get_live_type(native_types):
+    if "Дома, Коттеджи, Таунхаусы" in native_types \
+            and "Земельные участки под ИЖС" in native_types:
+        return "дом с участком"
+
     types = {
         "Усадьба": "дом с участком",
         "Дома, Коттеджи, Таунхаусы": "дача",
@@ -86,7 +90,7 @@ def get_live_type(val):
     }
 
     try:
-        return types[val]
+        return types[native_types[0]]
     except:
         if val in wrong_types.keys():
             return None
@@ -391,13 +395,12 @@ def add_extra_living(db, offer, attrs):
             yrl_rs_unit.text = 'кв. м'
 
     if attrs.get('object-objectspecies', ''):
-        for i in attrs.get('object-objectspecies', '').split('||'):
-            cat = get_live_type(db['objectspecies'][i]['name'])
-            if not cat:
-                continue
-            yrl_category = etree.SubElement(offer, 'category')
-            yrl_category.text = cat
-            break
+        types = [db['objectspecies'][i]['name'] for i in
+            attrs.get('object-objectspecies', '').split('||')
+        ]
+        cat = get_live_type(types)
+        yrl_category = etree.SubElement(offer, 'category')
+        yrl_category.text = cat
 
 
 @periodic_task(run_every=dt.timedelta(seconds=60*60*12))
