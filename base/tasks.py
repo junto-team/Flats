@@ -92,10 +92,10 @@ def get_live_type(native_types):
     try:
         return types[native_types[0]]
     except:
-        if val in wrong_types.keys():
+        if native_types[0] in wrong_types.keys():
             return None
 
-    return val
+    return native_types[0]
 
 
 def get_repair(value):
@@ -341,13 +341,16 @@ def add_extra_commercial(db, offer, attrs):
     yrl_deal_status.text = 'direct rent'
 
     if attrs.get('object-objectspecies', ''):
+        types = []
         for i in attrs.get('object-objectspecies', '').split('||'):
             type = get_comm_type(db['objectspecies'][i]['name'])
-            if not type:
+            if not type or type in types:
                 continue
+            types.append(type)
 
             yrl_commercial_type = etree.SubElement(offer, 'commercial-type')
             yrl_commercial_type.text = type
+            break
 
 
 def add_extra_living(db, offer, attrs):
@@ -398,9 +401,12 @@ def add_extra_living(db, offer, attrs):
         types = [db['objectspecies'][i]['name'] for i in
             attrs.get('object-objectspecies', '').split('||')
         ]
-        cat = get_live_type(types)
-        yrl_category = etree.SubElement(offer, 'category')
-        yrl_category.text = cat
+        try:
+            cat = get_live_type(types)
+            yrl_category = etree.SubElement(offer, 'category')
+            yrl_category.text = cat
+        except:
+            pass
 
 
 @periodic_task(run_every=dt.timedelta(seconds=60*60*12))
