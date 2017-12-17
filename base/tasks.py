@@ -5,6 +5,7 @@ import json
 import re
 
 from django.utils.html import escape
+from django.utils import timezone
 
 from base.models import *
 
@@ -274,7 +275,7 @@ def generate_yrl(db, offer, attrs):
     yrl_type.text = 'аренда' if 'Аренда' == attrs.get('objectType', '') else 'продажа'
 
     yrl_last_update_date = etree.SubElement(offer, 'last-update-date')
-    yrl_last_update_date.text = dt.datetime.now().isoformat()
+    yrl_last_update_date.text = timezone.now().isoformat()
 
     append_location(db, offer, attrs)
     append_sales_agent(db, offer, attrs)
@@ -409,7 +410,7 @@ def add_extra_living(db, offer, attrs):
             pass
 
 
-@periodic_task(run_every=dt.timedelta(seconds=60*2))
+@periodic_task(ignore_result=True, run_every=dt.timedelta(seconds=10))
 def get_yrl():
     # Download data for YRL
     db = {
@@ -462,7 +463,7 @@ def get_yrl():
         if content['publishedon']:
             yrl_creation_date.text = dt.datetime.fromtimestamp(int(content['publishedon'])).isoformat()
         else:
-            yrl_creation_date.text = dt.datetime.now().isoformat()
+            yrl_creation_date.text = timezone.now().isoformat()
 
         generate_yrl(db, offer, attrs)
         if obj_type in ['Загородная недвижимость', 'Квартиры']:
