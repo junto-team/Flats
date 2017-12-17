@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 import os
 import envvars
 import dj_database_url
-import djcelery
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -36,19 +35,15 @@ ALLOWED_HOSTS = ['127.0.0.1', '46.101.129.136']
 
 
 # Setup Celery
-djcelery.setup_loader()
-
-CELERYBEAT_SCHEDULER = "djcelery.schedulers.DatabaseScheduler"
+CELERY_ACCEPT_CONTENT = ['pickle', 'json']
 CELERY_ALWAYS_EAGER = False
 BROKER_BACKEND = "django"
-CELERY_IMPORTS = ['base.tasks']
 
 
 # Application definition
 
 INSTALLED_APPS = [
     'base',
-    'djcelery',
     'kombu.transport.django',
     'django.contrib.admin',
     'django.contrib.auth',
