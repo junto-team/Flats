@@ -409,7 +409,7 @@ def add_extra_living(db, offer, attrs):
             pass
 
 
-@periodic_task(run_every=dt.timedelta(seconds=60*10))
+@periodic_task(run_every=dt.timedelta(seconds=60*2))
 def get_yrl():
     # Download data for YRL
     db = {
