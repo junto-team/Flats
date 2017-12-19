@@ -476,7 +476,7 @@ def get_yrl():
 
 
 @periodic_task(ignore_result=True, run_every=dt.timedelta(seconds=60*60*6))
-def generate_yrl():
+def task_get_yrl():
     try:
         return get_yrl()
     except:
