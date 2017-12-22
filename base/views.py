@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 
 from base.models import CeleryResults
-from .tasks import get_yrl
+from .tasks import task_get_yrl
 
 
 def yrl(request):
@@ -9,7 +9,7 @@ def yrl(request):
         task_result = CeleryResults.objects.using('default').get(task_key=200)
         xml = task_result.content
     except:
-        get_yrl.apply()
+        task_get_yrl.apply()
         task_result = CeleryResults.objects.using('default').get(task_key=200)
         xml = task_result.content
 
@@ -20,7 +20,7 @@ def yrl(request):
 
 
 def manual_yrl(request):
-    get_yrl.apply()
+    task_get_yrl.apply()
     task_result = CeleryResults.objects.using('default').get(task_key=200)
 
     return HttpResponse(
