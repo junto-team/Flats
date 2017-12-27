@@ -459,6 +459,7 @@ def get_yrl():
             attrs[templv['name']] = value
 
         # skip object
+        print(attrs.get('objectLoadXML', 'Нет'))
         if attrs.get('objectLoadXML', 'Нет') != 'Да':
             continue
 
