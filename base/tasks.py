@@ -458,9 +458,8 @@ def get_yrl():
                 continue
             attrs[templv['name']] = value
 
-        # skip object
-        print(attrs.get('objectLoadXML', 'Нет'))
-        if attrs.get('objectLoadXML', 'Нет') != 'Да':
+        # skip object if field 'LoadXML' is set to 0
+        if attrs.get('objectLoadXML', 0) != 1:
             continue
 
         offer = etree.SubElement(xml, 'offer', **{'internal-id': str(content_id)})
