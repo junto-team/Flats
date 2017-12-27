@@ -275,7 +275,7 @@ def generate_yrl(db, offer, attrs):
     yrl_type.text = 'аренда' if 'Аренда' == attrs.get('objectType', '') else 'продажа'
 
     yrl_last_update_date = etree.SubElement(offer, 'last-update-date')
-    yrl_last_update_date.text = timezone.now().isoformat()
+    yrl_last_update_date.text = dt.datetime.now().isoformat()
 
     append_location(db, offer, attrs)
     append_sales_agent(db, offer, attrs)
@@ -459,7 +459,7 @@ def get_yrl():
             attrs[templv['name']] = value
 
         # skip object
-        if attrs.get('objectLoadXML', 'Нет') == 'Нет':
+        if attrs.get('objectLoadXML', 'Нет') != 'Да':
             continue
 
         offer = etree.SubElement(xml, 'offer', **{'internal-id': str(content_id)})
