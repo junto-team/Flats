@@ -443,6 +443,7 @@ def get_yrl():
     date_element = etree.SubElement(xml, 'generation-date')
     date_element.text = str(dt.datetime.now().isoformat())
     for content_id, content in db['content'].items():
+        # skip if not in 'object' folder and
         # 10 - is realty object template ID
         # 326 - id of 'Objects' folder (see manage site)
         if content['template'] != 10 or content['parent'] != 326:
@@ -456,6 +457,10 @@ def get_yrl():
                 obj_type = value
                 continue
             attrs[templv['name']] = value
+
+        # skip object
+        if attrs.get('objectLoadXML', 'Нет') == 'Нет':
+            continue
 
         offer = etree.SubElement(xml, 'offer', **{'internal-id': str(content_id)})
         yrl_creation_date = etree.SubElement(offer, 'creation-date')
