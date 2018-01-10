@@ -239,9 +239,6 @@ def append_price(offer, attrs):
         yrl_currency = etree.SubElement(yrl_price, 'currency')
         yrl_currency.text = links[value]
 
-    yrl_unit = etree.SubElement(yrl_price, 'unit')
-    yrl_unit.text = 'кв. м'
-
     value = attrs.get('objectCommission', '')
     if value:
         yrl_commission = etree.SubElement(yrl_price, 'commission')
