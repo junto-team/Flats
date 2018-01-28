@@ -156,6 +156,8 @@ def append_location(db, offer, attrs):
     try:
         region_id = attrs.get('objectRegions', None)
         region = db['regions'][int(region_id)]['name']
+        if region.lower() == 'мо':
+            region = 'Московская область'
         yrl_region = etree.SubElement(yrl_location, 'region')
         yrl_region.text = region
     except:
@@ -306,6 +308,10 @@ def generate_yrl(db, offer, attrs):
     except:
         pass
 
+    if attrs.get('content', ''):
+        yrl_description = etree.SubElement(offer, 'description')
+        yrl_description.text = attrs['content']
+
     if attrs.get('objectFurniture', ''):
         yrl_furniture = etree.SubElement(offer, 'room-furniture')
         yrl_furniture.text = 'да'
@@ -411,11 +417,12 @@ def get_yrl():
     # Download data for YRL
     db = {
         'content': {i['id']: {
+            'content': i['content'],
             'publishedon': i['publishedon'],
             'parent': i['parent'],
             'pagetitle': i['pagetitle'],
             'template': i['template']
-        } for i in AnysiteSiteContent.objects.using('mezon').filter(published=1).values('id', 'parent', 'publishedon', 'pagetitle', 'template')},
+        } for i in AnysiteSiteContent.objects.using('mezon').filter(published=1).values('id', 'content', 'parent', 'publishedon', 'pagetitle', 'template')},
         'tmplvarcontentvalues': {i['id']: {
             'contentid': i['contentid'],
             'tmplvarid': i['tmplvarid'],
@@ -446,7 +453,9 @@ def get_yrl():
         if content['template'] != 10 or content['parent'] != 326:
             continue
 
-        attrs = {}
+        attrs = {
+            'content': content['content']
+        }
         obj_type = ''
         for tmplvarid, value in [(i['tmplvarid'], i['value']) for i in db['tmplvarcontentvalues'].values() if i['contentid'] == content_id]:
             templv = db['tmplvars'][tmplvarid]

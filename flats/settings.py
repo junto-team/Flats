@@ -90,9 +90,9 @@ WSGI_APPLICATION = 'flats.wsgi.application'
 DATABASES = {
     'mezon': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'from_anton',
-        'USER': 'anton',
-        'PASSWORD': 'anton',
+        'NAME': 'mezon',
+        'USER': 'mezon',
+        'PASSWORD': '123Mezon#',
         'HOST': 'localhost',
         'PORT': '3306',
     },
