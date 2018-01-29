@@ -156,7 +156,7 @@ def append_location(db, offer, attrs):
     try:
         region_id = attrs.get('objectRegions', None)
         region = db['regions'][int(region_id)]['name']
-        if region.lower() == 'мо':
+        if region.lower() in ['мо', 'подмосковье']:
             region = 'Московская область'
         yrl_region = etree.SubElement(yrl_location, 'region')
         yrl_region.text = region
