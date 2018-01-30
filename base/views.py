@@ -19,6 +19,21 @@ def yrl(request):
     )
 
 
+def yrl_afy(request):
+    try:
+        task_result = XmlFeed.objects.using('default').get(task_key=300)
+        xml = task_result.content
+    except:
+        get_yrl()
+        task_result = XmlFeed.objects.using('default').get(task_key=300)
+        xml = task_result.content
+
+    return HttpResponse(
+        xml,
+        content_type="application/xml"
+    )
+
+
 def manual_yrl(request):
     get_yrl()
     task_result = XmlFeed.objects.using('default').get(task_key=200)

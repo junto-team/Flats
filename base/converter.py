@@ -9,6 +9,43 @@ from django.utils import timezone
 from base.models import *
 
 
+def get_comm_type_afy(val):
+    """ afy.ru  """
+    types = {
+        "Помещение под производство ": "manufacturing",
+        "ПСН": "free purpose",
+        "Офис": "office",
+        "ОСЗ": "free purpose",
+        "Склад": "warehouse",
+        "Бизнес-центр": "office",
+        "Торговый центр": "retail",
+        "Продажа бизнеса": "business",
+        "Готовый бизнес": "business",
+    }
+    wrong_types = {
+        "Дома, Коттеджи, Таунхаусы": "hotel",
+        "Гостиничный комплекс ": "hotel",
+        "Турбаза": "hotel",
+        "Торговая площадь": "land",
+        "Общепит": "public catering",
+        "Автосервис": "auto repair",
+        "Автозаправка": "auto repair",
+        "Автомойка": "auto repair",
+        "Гараж": "auto repair",
+        "Автостоянка ": "auto repair",
+        "Усадьба": "hotel",
+        "Земля под коммерческую застройку": "land",
+        "Земли промназначения": "land",
+        "Земли сельхозназначения": "land",
+        "Земельные участки под ИЖС": "",
+        "Ивестиционный проект": "",
+        "Земли сельхозназначения под дачное строительство": "",
+        "Квартира": "",
+    }
+
+    return types[val]
+
+
 def get_comm_type(val):
     types = {
         "Земля под коммерческую застройку": "land",
@@ -43,13 +80,7 @@ def get_comm_type(val):
 
     }
 
-    try:
-        return types[val]
-    except:
-        if val in wrong_types.keys():
-            return None
-
-    return val
+    return types[val]
 
 
 def get_live_type(native_types):
@@ -89,13 +120,7 @@ def get_live_type(native_types):
         "Ивестиционный проект": ""
     }
 
-    try:
-        return types[native_types[0]]
-    except:
-        if native_types[0] in wrong_types.keys():
-            return None
-
-    return native_types[0]
+    return types[native_types[0]]
 
 
 def get_repair(value):
@@ -268,7 +293,7 @@ def append_area(offer, attrs):
         yrl_la_unit.text = 'сотка'
 
 
-def generate_yrl(db, offer, attrs):
+def generate_object_yrl(db, offer, attrs):
     yrl_type = etree.SubElement(offer, 'type')
     yrl_type.text = 'аренда' if 'Аренда' == attrs.get('objectType', '') else 'продажа'
 
@@ -336,7 +361,7 @@ def generate_yrl(db, offer, attrs):
         yrl_gas.text = 'да'
 
 
-def add_extra_commercial(db, offer, attrs):
+def add_extra_commercial(db, offer, attrs, for_afy):
     yrl_category = etree.SubElement(offer, 'category')
     yrl_category.text = 'коммерческая'
 
@@ -346,13 +371,16 @@ def add_extra_commercial(db, offer, attrs):
     if attrs.get('object-objectspecies', ''):
         types = []
         for i in attrs.get('object-objectspecies', '').split('||'):
-            type = get_comm_type(db['objectspecies'][i]['name'])
-            if not type or type in types:
+            if for_afy:
+                comm_type = get_comm_type_afy(db['objectspecies'][i]['name'])
+            else:
+                comm_type = get_comm_type(db['objectspecies'][i]['name'])
+            if not comm_type or comm_type in types:
                 continue
-            types.append(type)
+            types.append(comm_type)
 
             yrl_commercial_type = etree.SubElement(offer, 'commercial-type')
-            yrl_commercial_type.text = type
+            yrl_commercial_type.text = comm_type
             break
 
 
@@ -412,8 +440,7 @@ def add_extra_living(db, offer, attrs):
             pass
 
 
-def get_yrl():
-    # Download data for YRL
+def download_data():
     db = {
         'content': {i['id']: {
             'content': i['content'],
@@ -440,7 +467,10 @@ def get_yrl():
             'name': i['name']
         } for i in AnysiteObjectspecies.objects.using('mezon').all().values('id', 'name')}
     }
+    return db
 
+
+def generate_yrl(db, for_afy=False):
     # Create root element
     xml = etree.Element('realty-feed', xmlns="http://webmaster.yandex.ru/schemas/feed/realty/2010-06")
     date_element = etree.SubElement(xml, 'generation-date')
@@ -468,18 +498,31 @@ def get_yrl():
             continue
 
         offer = etree.SubElement(xml, 'offer', **{'internal-id': str(content_id)})
-        yrl_creation_date = etree.SubElement(offer, 'creation-date')
-        if content['publishedon']:
-            yrl_creation_date.text = dt.datetime.fromtimestamp(int(content['publishedon'])).isoformat()
-        else:
-            yrl_creation_date.text = timezone.now().isoformat()
+        try:
+            yrl_creation_date = etree.SubElement(offer, 'creation-date')
+            if content['publishedon']:
+                yrl_creation_date.text = dt.datetime.fromtimestamp(int(content['publishedon'])).isoformat()
+            else:
+                yrl_creation_date.text = timezone.now().isoformat()
 
-        generate_yrl(db, offer, attrs)
-        if obj_type in ['Загородная недвижимость', 'Квартиры']:
-            add_extra_living(db, offer, attrs)
-        elif obj_type == 'Коммерческая недвижимость':
-            add_extra_commercial(db, offer, attrs)
+            generate_object_yrl(db, offer, attrs)
+            if obj_type in ['Загородная недвижимость', 'Квартиры']:
+                add_extra_living(db, offer, attrs)
+            elif obj_type == 'Коммерческая недвижимость':
+                add_extra_commercial(db, offer, attrs, for_afy)
+        except:
+            offer.getparent().remove(offer)
 
-    task_res, created = XmlFeed.objects.get_or_create(task_key=200)
+    task_key = 200
+    if for_afy:
+        task_key = 300
+
+    task_res, created = XmlFeed.objects.get_or_create(task_key=task_key)
     task_res.content = etree.tostring(xml, encoding='UTF-8', xml_declaration=True)
     task_res.save(using='default')
+
+
+def get_yrl():
+    db = download_data()
+    generate_yrl(db)
+    generate_yrl(db, for_afy=True)
