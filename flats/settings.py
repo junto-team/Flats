@@ -33,13 +33,6 @@ DEBUG = 'DEBUG' in os.environ and os.environ['DEBUG'] == 'True'
 
 ALLOWED_HOSTS = ['127.0.0.1', '46.101.129.136']
 
-
-# Setup Celery
-CELERY_ACCEPT_CONTENT = ['pickle', 'json']
-CELERY_ALWAYS_EAGER = False
-BROKER_BACKEND = "django"
-
-
 # Application definition
 
 INSTALLED_APPS = [

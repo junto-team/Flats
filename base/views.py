@@ -1,16 +1,16 @@
 from django.http import HttpResponse
 
-from base.models import CeleryResults
-from .tasks import task_get_yrl
+from .models import XmlFeed
+from .converter import get_yrl
 
 
 def yrl(request):
     try:
-        task_result = CeleryResults.objects.using('default').get(task_key=200)
+        task_result = XmlFeed.objects.using('default').get(task_key=200)
         xml = task_result.content
     except:
-        task_get_yrl.apply()
-        task_result = CeleryResults.objects.using('default').get(task_key=200)
+        get_yrl()
+        task_result = XmlFeed.objects.using('default').get(task_key=200)
         xml = task_result.content
 
     return HttpResponse(
@@ -20,8 +20,8 @@ def yrl(request):
 
 
 def manual_yrl(request):
-    task_get_yrl.apply()
-    task_result = CeleryResults.objects.using('default').get(task_key=200)
+    get_yrl()
+    task_result = XmlFeed.objects.using('default').get(task_key=200)
 
     return HttpResponse(
         task_result.content,

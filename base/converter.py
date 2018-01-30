@@ -1,4 +1,3 @@
-from celery.task import periodic_task
 from lxml import etree
 import datetime as dt
 import json
@@ -481,14 +480,6 @@ def get_yrl():
         elif obj_type == 'Коммерческая недвижимость':
             add_extra_commercial(db, offer, attrs)
 
-    task_res, created = CeleryResults.objects.get_or_create(task_key=200)
+    task_res, created = XmlFeed.objects.get_or_create(task_key=200)
     task_res.content = etree.tostring(xml, encoding='UTF-8', xml_declaration=True)
     task_res.save(using='default')
-
-
-@periodic_task(ignore_result=True, run_every=dt.timedelta(seconds=60*60*6))
-def task_get_yrl():
-    try:
-        return get_yrl()
-    except:
-        return None
