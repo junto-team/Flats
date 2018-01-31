@@ -183,13 +183,13 @@ def append_location(db, offer, attrs):
         if region.lower() in ['мо', 'подмосковье']:
             region = 'Московская область'
         yrl_region = etree.SubElement(yrl_location, 'region')
-        yrl_region.text = region
+        yrl_region.text = region.strip(' ')
     except:
         pass
 
     if attrs.get('objectRegionIrr', ''):
         yrl_region_irr = etree.SubElement(yrl_location, 'locality-name')
-        yrl_region_irr.text = attrs.get('objectRegionIrr', '')
+        yrl_region_irr.text = attrs.get('objectRegionIrr', '').strip(' ')
 
     address = attrs.get('object-address', '')
     if address:
