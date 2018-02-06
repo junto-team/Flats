@@ -472,7 +472,7 @@ def download_data():
     return db
 
 
-def generate_yrl(db, for_afy=False):
+def generate_yrl(db, for_afy=False, only_flats=False):
     # Create root element
     xml = etree.Element('realty-feed', xmlns="http://webmaster.yandex.ru/schemas/feed/realty/2010-06")
     date_element = etree.SubElement(xml, 'generation-date')
@@ -508,16 +508,22 @@ def generate_yrl(db, for_afy=False):
                 yrl_creation_date.text = timezone.now().isoformat()
 
             generate_object_yrl(db, offer, attrs)
-            if obj_type in ['Загородная недвижимость', 'Квартиры']:
-                add_extra_living(db, offer, attrs)
-            elif obj_type == 'Коммерческая недвижимость':
-                add_extra_commercial(db, offer, attrs, for_afy)
+            if only_flats:
+                if obj_type == 'Квартиры':
+                    add_extra_living(db, offer, attrs)
+            else:
+                if obj_type in ['Загородная недвижимость', 'Квартиры']:
+                    add_extra_living(db, offer, attrs)
+                elif obj_type == 'Коммерческая недвижимость':
+                    add_extra_commercial(db, offer, attrs, for_afy)
         except:
             offer.getparent().remove(offer)
 
     task_key = 200
     if for_afy:
         task_key = 300
+    if only_flats:
+        task_key = 400
 
     task_res, created = XmlFeed.objects.get_or_create(task_key=task_key)
     task_res.content = etree.tostring(xml, encoding='UTF-8', xml_declaration=True)
@@ -528,3 +534,4 @@ def get_yrl():
     db = download_data()
     generate_yrl(db)
     generate_yrl(db, for_afy=True)
+    generate_yrl(db, only_flats=True)
