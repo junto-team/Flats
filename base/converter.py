@@ -495,6 +495,10 @@ def generate_yrl(db, for_afy=False, only_flats=False):
                 continue
             attrs[templv['name']] = value
 
+        # Check only flats flag
+        if only_flats and obj_type != 'Квартиры':
+            continue
+
         # skip object if field 'LoadXML' is set to 0
         if attrs.get('objectLoadXML', '1') != '1':
             continue
@@ -507,15 +511,10 @@ def generate_yrl(db, for_afy=False, only_flats=False):
             else:
                 yrl_creation_date.text = timezone.now().isoformat()
 
-            generate_object_yrl(db, offer, attrs)
-            if only_flats:
-                if obj_type == 'Квартиры':
-                    add_extra_living(db, offer, attrs)
-            else:
-                if obj_type in ['Загородная недвижимость', 'Квартиры']:
-                    add_extra_living(db, offer, attrs)
-                elif obj_type == 'Коммерческая недвижимость':
-                    add_extra_commercial(db, offer, attrs, for_afy)
+            if obj_type in ['Загородная недвижимость', 'Квартиры']:
+                add_extra_living(db, offer, attrs)
+            elif obj_type == 'Коммерческая недвижимость':
+                add_extra_commercial(db, offer, attrs, for_afy)
         except:
             offer.getparent().remove(offer)
 
