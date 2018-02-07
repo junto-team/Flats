@@ -511,6 +511,7 @@ def generate_yrl(db, for_afy=False, only_flats=False):
             else:
                 yrl_creation_date.text = timezone.now().isoformat()
 
+            generate_object_yrl(db, offer, attrs)
             if obj_type in ['Загородная недвижимость', 'Квартиры']:
                 add_extra_living(db, offer, attrs)
             elif obj_type == 'Коммерческая недвижимость':
