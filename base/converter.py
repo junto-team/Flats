@@ -2,11 +2,34 @@ from lxml import etree
 import datetime as dt
 import json
 import re
+import urllib.request
 
 from django.utils.html import escape
 from django.utils import timezone
 
 from base.models import *
+
+
+def get_exchange_rate(currency='USD'):
+    try:
+        contents = urllib.request.urlopen("http://www.cbr.ru/scripts/XML_daily.asp").read()
+        cbr_xml = etree.fromstring(contents)
+        currency_xml = None
+        for e in cbr_xml:
+            for p in e:
+                if p.tag == 'CharCode' and p.text == currency:
+                    currency_xml = e
+                    break
+            if currency_xml is not None:
+                break
+
+        for p in currency_xml:
+            if p.tag == 'Value':
+                return float(p.text.replace(',', '.'))
+    except:
+        pass
+
+    return None
 
 
 def get_comm_type_afy(val):
@@ -278,6 +301,46 @@ def append_price(offer, attrs):
         yrl_period.text = value
 
 
+def append_price_domcklick(offer, attrs):
+    value = attrs.get('object_price', '')
+    if not value:
+        return
+
+    yrl_price = etree.SubElement(offer, 'price')
+    yrl_value = etree.SubElement(yrl_price, 'value')
+    yrl_value.text = value
+
+    yrl_currency = None
+    value = attrs.get('objectCurrency', '')
+    if value:
+        links = {
+            'Рубли': 'RUB',
+            'Доллары': 'USD',
+            'Евро': 'EUR'
+        }
+        yrl_currency = etree.SubElement(yrl_price, 'currency')
+        yrl_currency.text = links[value]
+
+    if yrl_currency is not None and yrl_currency.text != 'RUB':
+        try:
+            exchange_rate = get_exchange_rate(yrl_currency.text)
+            currency_value = exchange_rate * float(yrl_value.text)
+            yrl_value.text = str(round(currency_value, -3))
+            yrl_currency.text = 'RUB'
+        except:
+            pass
+
+    value = attrs.get('objectCommission', '')
+    if value:
+        yrl_commission = etree.SubElement(yrl_price, 'commission')
+        yrl_commission.text = value
+
+    value = attrs.get('objectTimeRent', '')
+    if value and 'Аренда' == attrs.get('objectType', ''):
+        yrl_period = etree.SubElement(yrl_price, 'period')
+        yrl_period.text = value
+
+
 def append_area(offer, attrs):
     if attrs.get('object_area', ''):
         yrl_area = etree.SubElement(offer, 'area')
@@ -295,7 +358,7 @@ def append_area(offer, attrs):
         yrl_la_unit.text = 'сотка'
 
 
-def generate_object_yrl(db, offer, attrs):
+def generate_object_yrl(db, offer, attrs, for_domcklick=False):
     yrl_type = etree.SubElement(offer, 'type')
     yrl_type.text = 'аренда' if 'Аренда' == attrs.get('objectType', '') else 'продажа'
 
@@ -304,8 +367,12 @@ def generate_object_yrl(db, offer, attrs):
 
     append_location(db, offer, attrs)
     append_sales_agent(db, offer, attrs)
-    append_price(offer, attrs)
     append_area(offer, attrs)
+
+    if for_domcklick:
+        append_price_domcklick(offer, attrs)
+    else:
+        append_price(offer, attrs)
 
     if attrs.get('objectFloor', ''):
         for i in attrs.get('objectFloor', '').replace(' ', '').split(','):
@@ -472,7 +539,7 @@ def download_data():
     return db
 
 
-def generate_yrl(db, for_afy=False, only_flats=False):
+def generate_yrl(db, for_afy=False, only_flats=False, for_domcklick=False):
     # Create root element
     xml = etree.Element('realty-feed', xmlns="http://webmaster.yandex.ru/schemas/feed/realty/2010-06")
     date_element = etree.SubElement(xml, 'generation-date')
@@ -499,6 +566,12 @@ def generate_yrl(db, for_afy=False, only_flats=False):
         if only_flats and obj_type != 'Квартиры':
             continue
 
+        if for_domcklick:
+            if obj_type != 'Квартиры':
+                continue
+            if 'Аренда' == attrs.get('objectType', ''):
+                continue
+
         # skip object if field 'LoadXML' is set to 0
         if attrs.get('objectLoadXML', '1') != '1':
             continue
@@ -511,7 +584,7 @@ def generate_yrl(db, for_afy=False, only_flats=False):
             else:
                 yrl_creation_date.text = timezone.now().isoformat()
 
-            generate_object_yrl(db, offer, attrs)
+            generate_object_yrl(db, offer, attrs, for_domcklick)
             if obj_type in ['Загородная недвижимость', 'Квартиры']:
                 add_extra_living(db, offer, attrs)
             elif obj_type == 'Коммерческая недвижимость':
@@ -524,6 +597,8 @@ def generate_yrl(db, for_afy=False, only_flats=False):
         task_key = 300
     if only_flats:
         task_key = 400
+    if for_domcklick:
+        task_key = 500
 
     task_res, created = XmlFeed.objects.get_or_create(task_key=task_key)
     task_res.content = etree.tostring(xml, encoding='UTF-8', xml_declaration=True)
@@ -535,3 +610,4 @@ def get_yrl():
     generate_yrl(db)
     generate_yrl(db, for_afy=True)
     generate_yrl(db, only_flats=True)
+    generate_yrl(db, for_domcklick=True)
