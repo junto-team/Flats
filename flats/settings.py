@@ -37,7 +37,6 @@ ALLOWED_HOSTS = ['127.0.0.1', '46.101.129.136']
 
 INSTALLED_APPS = [
     'base',
-    'kombu.transport.django',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
