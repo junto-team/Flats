@@ -210,7 +210,16 @@ def append_location(db, offer, attrs):
     except:
         pass
 
-    if attrs.get('objectRegionIrr', ''):
+    if attrs.get('objectLocality', ''):
+        city = attrs.get('objectLocality', '').strip(' ')
+        yrl_locality = etree.SubElement(yrl_location, 'locality-name')
+        yrl_locality.text = city.title()
+
+        region = attrs.get('objectRegionIrr', '').strip(' ').lower()
+        if region:
+            yrl_region_irr = etree.SubElement(yrl_location, 'district')
+            yrl_region_irr.text = region.title()
+    elif attrs.get('objectRegionIrr', ''):
         region = attrs.get('objectRegionIrr', '').strip(' ').lower()
         tag = 'district' if 'р-н' in region or 'район' in region else 'locality-name'
         yrl_region_irr = etree.SubElement(yrl_location, tag)
@@ -584,11 +593,21 @@ def generate_yrl(db, for_afy=False, only_flats=False, for_domcklick=False):
             else:
                 yrl_creation_date.text = timezone.now().isoformat()
 
+            # проверка площади - если больше 100 соток, то автоматом коммерческая
+            auto_commerc = False
+            lot_area = attrs.get('objectAreaTerritory', None)
+            try:
+                avail_types = ['Загородная недвижимость', 'Квартиры', 'Коммерческая недвижимость']
+                if int(lot_area) >= 100 and obj_type in avail_types:
+                    auto_commerc = True
+            except:
+                pass
+
             generate_object_yrl(db, offer, attrs, for_domcklick)
-            if obj_type in ['Загородная недвижимость', 'Квартиры']:
-                add_extra_living(db, offer, attrs)
-            elif obj_type == 'Коммерческая недвижимость':
+            if auto_commerc or obj_type == 'Коммерческая недвижимость':
                 add_extra_commercial(db, offer, attrs, for_afy)
+            elif obj_type in ['Загородная недвижимость', 'Квартиры']:
+                add_extra_living(db, offer, attrs)
         except:
             offer.getparent().remove(offer)
 
