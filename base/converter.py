@@ -600,6 +600,8 @@ def generate_yrl(db, for_afy=False, only_flats=False, for_domcklick=False):
                 avail_types = ['Загородная недвижимость', 'Квартиры', 'Коммерческая недвижимость']
                 if int(lot_area) >= 100 and obj_type in avail_types:
                     auto_commerc = True
+                    # изменяем параметры под требования коммерческой недвижимости
+                    attrs['object-objectspecies'] = "Земли сельхозназначения"
             except:
                 pass
 
