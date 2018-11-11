@@ -1,9 +1,6 @@
 from lxml import etree
 import json
 import re
-import os
-
-from django.conf import settings
 
 from base.models import *
 from base.converter.helpers import download_data, cian_get_highway, \
@@ -149,9 +146,8 @@ def append_bargain_sale(attrs, root_tag):
 
 
 def generate_object_yrl(attrs, root_tag):
-    if attrs.get('objectCountRoom', ''):
-        flat_rooms_count = etree.SubElement(root_tag, 'FlatRoomsCount')
-        flat_rooms_count.text = attrs.get('objectCountRoom', '')
+    flat_rooms_count = etree.SubElement(root_tag, 'FlatRoomsCount')
+    flat_rooms_count.text = attrs.get('objectCountRoom', '')
 
     apartments = etree.SubElement(root_tag, 'IsApartments')
     apartments.text = get_boolean(attrs, 'objectApartments')
@@ -344,7 +340,7 @@ def generate_yrl(db):
             address = etree.SubElement(offer, 'Address')
             address.text = attrs.get('object-address', "")
 
-            phone = etree.SubElement(offer, 'Phone')
+            phone = etree.SubElement(offer, 'Phones')
             phone_schema = etree.SubElement(phone, 'PhoneSchema')
             country_code = etree.SubElement(phone_schema, 'CountryCode')
             country_code.text = '+7'

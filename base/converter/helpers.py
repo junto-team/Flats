@@ -58,7 +58,7 @@ def cian_get_highway(name):
         if highway.text.lower() in name:
             return highway.attrib['id']
 
-    return None
+    return ''
 
 
 def cian_get_metro(name):
@@ -77,4 +77,4 @@ def cian_get_metro(name):
         if metro.text.lower() in name:
             return metro.attrib['id']
 
-    return None
+    return ''
