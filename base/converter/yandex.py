@@ -8,6 +8,8 @@ from django.utils.html import escape
 from django.utils import timezone
 
 from base.models import *
+from base.converter.helpers import download_data
+from base.converter import keys
 
 
 def get_exchange_rate(currency='USD'):
@@ -518,36 +520,6 @@ def add_extra_living(db, offer, attrs):
             pass
 
 
-def download_data():
-    db = {
-        'content': {i['id']: {
-            'content': i['content'],
-            'publishedon': i['publishedon'],
-            'parent': i['parent'],
-            'pagetitle': i['pagetitle'],
-            'template': i['template']
-        } for i in AnysiteSiteContent.objects.using('mezon').filter(published=1).values('id', 'content', 'parent', 'publishedon', 'pagetitle', 'template')},
-        'tmplvarcontentvalues': {i['id']: {
-            'contentid': i['contentid'],
-            'tmplvarid': i['tmplvarid'],
-            'value': i['value']
-        } for i in AnysiteSiteTmplvarContentvalues.objects.using('mezon').all().values('id', 'contentid', 'tmplvarid', 'value')},
-        'tmplvars': {i['id']: {
-            'name': i['name']
-        } for i in AnysiteSiteTmplvars.objects.using('mezon').all().values('id', 'name')},
-        'regions': {i['id']: {
-            'name': i['name']
-        } for i in AnysiteRegions.objects.using('mezon').all().values('id', 'name')},
-        'metro': {i['id']: {
-            'name': i['name']
-        } for i in AnysiteMetro.objects.using('mezon').all().values('id', 'name')},
-        'objectspecies': {str(i['id']): {
-            'name': i['name']
-        } for i in AnysiteObjectspecies.objects.using('mezon').all().values('id', 'name')}
-    }
-    return db
-
-
 def generate_yrl(db, for_afy=False, only_flats=False, for_domcklick=False):
     # Create root element
     xml = etree.Element('realty-feed', xmlns="http://webmaster.yandex.ru/schemas/feed/realty/2010-06")
@@ -613,13 +585,13 @@ def generate_yrl(db, for_afy=False, only_flats=False, for_domcklick=False):
         except:
             offer.getparent().remove(offer)
 
-    task_key = 200
+    task_key = keys.DEFAULT
     if for_afy:
-        task_key = 300
+        task_key = keys.AFY
     if only_flats:
-        task_key = 400
+        task_key = keys.ONLY_FLATS
     if for_domcklick:
-        task_key = 500
+        task_key = keys.DOMCKLICK
 
     task_res, created = XmlFeed.objects.get_or_create(task_key=task_key)
     task_res.content = etree.tostring(xml, encoding='UTF-8', xml_declaration=True)

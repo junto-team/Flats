@@ -1,16 +1,17 @@
 from django.http import HttpResponse
 
 from .models import XmlFeed
-from .converter import get_yrl
+from .converter import keys, yandex, cian
 
 
 def yrl(request):
     try:
-        task_result = XmlFeed.objects.using('default').get(task_key=200)
+        task_result = XmlFeed.objects.using('default').get(task_key=keys.DEFAULT)
         xml = task_result.content
     except:
-        get_yrl()
-        task_result = XmlFeed.objects.using('default').get(task_key=200)
+        yandex.get_yrl()
+        cian.get_yrl()
+        task_result = XmlFeed.objects.using('default').get(task_key=keys.DEFAULT)
         xml = task_result.content
 
     return HttpResponse(
@@ -21,11 +22,11 @@ def yrl(request):
 
 def yrl_afy(request):
     try:
-        task_result = XmlFeed.objects.using('default').get(task_key=300)
+        task_result = XmlFeed.objects.using('default').get(task_key=keys.AFY)
         xml = task_result.content
     except:
-        get_yrl()
-        task_result = XmlFeed.objects.using('default').get(task_key=300)
+        yandex.get_yrl()
+        task_result = XmlFeed.objects.using('default').get(task_key=keys.AFY)
         xml = task_result.content
 
     return HttpResponse(
@@ -36,11 +37,11 @@ def yrl_afy(request):
 
 def yrl_flats(request):
     try:
-        task_result = XmlFeed.objects.using('default').get(task_key=400)
+        task_result = XmlFeed.objects.using('default').get(task_key=keys.ONLY_FLATS)
         xml = task_result.content
     except:
-        get_yrl()
-        task_result = XmlFeed.objects.using('default').get(task_key=400)
+        yandex.get_yrl()
+        task_result = XmlFeed.objects.using('default').get(task_key=keys.ONLY_FLATS)
         xml = task_result.content
 
     return HttpResponse(
@@ -51,11 +52,26 @@ def yrl_flats(request):
 
 def yrl_domklick(request):
     try:
-        task_result = XmlFeed.objects.using('default').get(task_key=500)
+        task_result = XmlFeed.objects.using('default').get(task_key=keys.DOMCKLICK)
         xml = task_result.content
     except:
-        get_yrl()
-        task_result = XmlFeed.objects.using('default').get(task_key=500)
+        yandex.get_yrl()
+        task_result = XmlFeed.objects.using('default').get(task_key=keys.DOMCKLICK)
+        xml = task_result.content
+
+    return HttpResponse(
+        xml,
+        content_type="application/xml"
+    )
+
+
+def feed_cian(request):
+    try:
+        task_result = XmlFeed.objects.using('default').get(task_key=keys.CIAN)
+        xml = task_result.content
+    except:
+        cian.get_yrl()
+        task_result = XmlFeed.objects.using('default').get(task_key=keys.CIAN)
         xml = task_result.content
 
     return HttpResponse(
@@ -65,7 +81,8 @@ def yrl_domklick(request):
 
 
 def manual_yrl(request):
-    get_yrl()
+    yandex.get_yrl()
+    cian.get_yrl()
     task_result = XmlFeed.objects.using('default').get(task_key=200)
 
     return HttpResponse(

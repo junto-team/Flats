@@ -41,13 +41,12 @@ class Command(BaseCommand):
 
     def show_content(self, templ_id):
         types = {}
-        for i in AnysiteSiteContent.objects.filter(template=templ_id)[:10]:
-            print(i.id)
-            for j in AnysiteSiteTmplvarContentvalues.objects.filter(contentid=i.id):
+        for i in AnysiteSiteContent.objects.using('mezon').filter(published=1)[:10]:
+            for j in AnysiteSiteTmplvarContentvalues.objects.using('mezon').filter(contentid=i.id):
                 #if not j.value or len(j.value) > 100:
                 #    continue
                 print("\t{}".format(j.value))
-                templv = AnysiteSiteTmplvars.objects.get(id=j.tmplvarid)
+                templv = AnysiteSiteTmplvars.objects.using('mezon').get(id=j.tmplvarid)
                 #if 'image' in templv.name:
                 #    print("\t{}, {}, {}, {}".format(templv.name, templv.type, j.value, json.loads(j.value)[0]['image']))
                 for attr, value in templv.__dict__.items():
@@ -69,6 +68,6 @@ class Command(BaseCommand):
         #for i in AnysiteObjectspecies.objects.all():
         #    print('"{}": "",'.format(i.name))
         #self.show_tmplvars(10)
-        self.show_content(10)
+        #self.show_content(10)
         #self.show_stat()
-        #self.show_types(10)
+        self.show_types(10)

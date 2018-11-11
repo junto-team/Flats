@@ -5,3 +5,4 @@ dj-database-url==0.4.2
 gunicorn==19.7.1
 pymysql>=0.7
 psycopg2==2.7.1
+requests

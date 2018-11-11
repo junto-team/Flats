@@ -94,6 +94,13 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'table_for_cache',
+    }
+}
+
 # Update database configuration with $DATABASE_URL.
 db_from_env = dj_database_url.config(env='FLATS_DATABASE_URL')
 DATABASES['default'].update(db_from_env)
