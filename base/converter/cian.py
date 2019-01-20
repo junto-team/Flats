@@ -331,8 +331,8 @@ def generate_yrl(db):
         if obj_type != 'Квартиры':
             continue
 
-        # skip object if field 'LoadXML' is set to 0
-        if attrs.get('objectLoadXML', '1') != '1':
+        # skip object if field 'LoadCian' is set to 0
+        if attrs.get('objectLoadCian', '1') != '1':
             continue
 
         offer = etree.SubElement(xml, 'object')
