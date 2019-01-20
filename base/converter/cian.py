@@ -284,6 +284,9 @@ def append_metro(db, attrs, root_tag):
     if not (attrs.get('objectMetro', '') and time_on_foot):
         return
 
+    # split time for every station
+    time_on_foot = time_on_foot.split(',')
+
     counter = 0
     undergrounds = etree.SubElement(root_tag, 'Undergrounds')
     for i in [i for key, i in db['metro'].items() if str(key) in metro_ids]:
@@ -294,7 +297,10 @@ def append_metro(db, attrs, root_tag):
         transport_type = etree.SubElement(underground_schema, 'TransportType')
         transport_type.text = 'walk'
         time = etree.SubElement(underground_schema, 'Time')
-        time.text = time_on_foot
+        try:
+            time.text = time_on_foot[counter - 1]
+        except:
+            time.text = time_on_foot[0]
         metro_id = etree.SubElement(underground_schema, 'Id')
         metro_id.text = cian_get_metro(i['name'])
 
