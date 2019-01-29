@@ -235,9 +235,12 @@ def get_agent_number(db, attrs):
     number = None
     for i in [j for j in db['tmplvarcontentvalues'].values() if j['contentid'] == int(person_id)]:
         templv = db['tmplvars'][i['tmplvarid']]
-        if templv['name'] == 'phonePerson':
+        if templv['name'] == 'phonePersonCian':
             number = i['value']
             break
+
+        if templv['name'] == 'phonePerson':
+            number = i['value']
 
     if not number:
         return None
@@ -345,6 +348,10 @@ def generate_yrl(db):
 
             address = etree.SubElement(offer, 'Address')
             address.text = attrs.get('object-address', "")
+
+            if attrs.get('objectCadastreNumber', None):
+                address = etree.SubElement(offer, 'CadastralNumber')
+                address.text = attrs.get('objectCadastreNumber', "")
 
             phone = etree.SubElement(offer, 'Phones')
             phone_schema = etree.SubElement(phone, 'PhoneSchema')

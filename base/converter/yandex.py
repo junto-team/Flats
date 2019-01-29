@@ -385,6 +385,14 @@ def generate_object_yrl(db, offer, attrs, for_domcklick=False):
     else:
         append_price(offer, attrs)
 
+    if attrs.get('objectHomeNumberApartment', ''):
+        yrl_flat_numb = etree.SubElement(offer, 'apartment')
+        yrl_flat_numb.text = attrs.get('objectHomeNumberApartment', '')
+
+    if attrs.get('objectCadastreNumber', ''):
+        yrl_cadastr = etree.SubElement(offer, 'cadastral-number')
+        yrl_cadastr.text = attrs.get('objectCadastreNumber', '')
+
     if attrs.get('objectFloor', ''):
         for i in attrs.get('objectFloor', '').replace(' ', '').split(','):
             yrl_floor = etree.SubElement(offer, 'floor')
