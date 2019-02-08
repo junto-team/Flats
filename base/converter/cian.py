@@ -65,7 +65,7 @@ def append_building(attrs, root_tag):
         new_tag = etree.SubElement(building, 'CeilingHeight')
         new_tag.text = attrs.get('objectHeightRoof', '')
 
-    if attrs.get('objectLiftPassanger', ''):
+    if attrs.get('objectLiftPassenger', ''):
         new_tag = etree.SubElement(building, 'PassengerLiftsCount')
         new_tag.text = attrs.get('objectLiftPassenger', '')
 
