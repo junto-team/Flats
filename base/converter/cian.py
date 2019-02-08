@@ -107,8 +107,8 @@ def append_bargain_rent(attrs, root_tag):
     value = attrs.get('objectCommission', '')
     if value:
         agent_bonus = etree.SubElement(bargain_tag, 'AgentBonus')
-        value = etree.SubElement(agent_bonus, 'Value')
-        value.text = value
+        bouns_value = etree.SubElement(agent_bonus, 'Value')
+        bouns_value.text = value
         ptype = etree.SubElement(agent_bonus, 'PaymentType')
         ptype.text = 'percent'
 
