@@ -15,7 +15,7 @@ home_types = {
     'foamConcreteBlock': 'Пенобетонный блок',
     'gasSilicateBlock': 'Газосиликатный блок',
     'monolith': 'Монолитный',
-    'monolithBrick': 'Монолитно-кирпичный',
+    'monolithBrick': 'Кирпично-монолитный',
     'old': 'Старый фонд',
     'panel': 'Панельный',
     'stalin': 'Сталинский',
