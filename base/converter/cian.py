@@ -370,18 +370,15 @@ def generate_yrl(db):
             append_agent(db, attrs, offer)
 
             # append photos
-            try:
-                images = json.loads(attrs.get('object-images', ''))
-                photos = etree.SubElement(offer, 'Photos')
-                for i in images:
-                    url = 'http://mezonn.ru/template/images/{}'.format(i['image'])
-                    photo_schema = etree.SubElement(photos, 'PhotoSchema')
-                    full_url = etree.SubElement(photo_schema, 'FullUrl')
-                    full_url.text = url
-                    is_default = etree.SubElement(photo_schema, 'IsDefault')
-                    is_default.text = False
-            except:
-                pass
+            images = json.loads(attrs.get('object-images', ''))
+            photos = etree.SubElement(offer, 'Photos')
+            for i in images:
+                url = 'http://mezonn.ru/template/images/{}'.format(i['image'])
+                photo_schema = etree.SubElement(photos, 'PhotoSchema')
+                full_url = etree.SubElement(photo_schema, 'FullUrl')
+                full_url.text = url
+                is_default = etree.SubElement(photo_schema, 'IsDefault')
+                is_default.text = 'false'
 
             generate_object_yrl(attrs, offer)
             if 'Аренда' == attrs.get('objectType', ''):
