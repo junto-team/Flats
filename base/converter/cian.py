@@ -340,7 +340,7 @@ def generate_yrl(db):
             continue
 
         # skip object if field 'LoadCian' is set to 0
-        if attrs.get('objectLoadCian', '1') != '1':
+        if attrs.get('objectLoadCian', None):
             continue
 
         offer = etree.SubElement(xml, 'object')
