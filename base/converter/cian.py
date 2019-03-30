@@ -104,6 +104,12 @@ def append_bargain_rent(attrs, root_tag):
     price = etree.SubElement(bargain_tag, 'LeaseTermType')
     price.text = 'fewMonths'
 
+    client_fee = etree.SubElement(bargain_tag, 'ClientFee')
+    client_fee.text = '0'
+
+    agent_fee = etree.SubElement(bargain_tag, 'AgentFee')
+    agent_fee.text = '0'
+
     value = attrs.get('objectPersonReward', '')
     if value:
         agent_bonus = etree.SubElement(bargain_tag, 'AgentBonus')
@@ -140,6 +146,12 @@ def append_bargain_sale(attrs, root_tag):
 
     price = etree.SubElement(bargain_tag, 'SaleType')
     price.text = 'free'
+
+    client_fee = etree.SubElement(bargain_tag, 'ClientFee')
+    client_fee.text = '0'
+
+    agent_fee = etree.SubElement(bargain_tag, 'AgentFee')
+    agent_fee.text = '0'
 
     value = attrs.get('objectCommission', '')
     if value:
