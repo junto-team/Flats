@@ -185,17 +185,31 @@ def get_home_type(value):
 
 def append_location(db, offer, attrs):
     def append_metro(tag, attrs):
-        metro_ids = attrs.get('objectMetro', '').split('||')
-        time_on_foot = attrs.get('objectDistanceMetro', '')
-        if not (attrs.get('objectMetro', '') and time_on_foot):
+        object_metro = attrs.get('objectMetro', '')
+        object_distance = attrs.get('objectDistanceMetro', '')
+        if not (object_metro and object_distance):
             return
 
-        for i in [i for key, i in db['metro'].items() if str(key) in metro_ids]:
+        metro_ids = object_metro.split('||')
+        time_on_foot = object_distance.split(',')
+
+        # формируется словарь где для каждого ID станции указано ее название
+        stations = {str(key): i['name'] for
+            key, i in db['metro'].items() if str(key) in metro_ids
+        }
+
+        for metro_id, name in stations:
+            try:
+                foot_time = time_on_foot[metro_ids.index(metro_id)]
+            except:
+                continue
+
             yrl_metro = etree.SubElement(tag, 'metro')
             yrl_metro_name = etree.SubElement(yrl_metro, 'name')
-            yrl_metro_name.text = i['name']
+            yrl_metro_name.text = name
+
             yrl_foot_time = etree.SubElement(yrl_metro, 'time-on-foot')
-            yrl_foot_time.text = time_on_foot
+            yrl_foot_time.text = foot_time
 
     yrl_location = etree.SubElement(offer, 'location')
 
