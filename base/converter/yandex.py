@@ -198,7 +198,7 @@ def append_location(db, offer, attrs):
             key, i in db['metro'].items() if str(key) in metro_ids
         }
 
-        for metro_id, name in stations:
+        for metro_id, name in stations.items():
             try:
                 foot_time = time_on_foot[metro_ids.index(metro_id)]
             except:
