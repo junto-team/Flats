@@ -76,7 +76,7 @@ python manage.py generate_yrl
 deactivate
 ```
 
-#### Привет насткройки CRON:
+#### Пример насткройки CRON:
 ```
 0 2 * * * cd /home/ubuntu/ && ./update_feed.sh
 ```
