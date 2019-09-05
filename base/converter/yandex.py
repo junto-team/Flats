@@ -428,7 +428,7 @@ def generate_object_yrl(db, offer, attrs, for_domcklick=False):
     try:
         images = json.loads(attrs.get('object-images', ''))
         for i in images:
-            url = 'http://mezonn.ru/template/images/{}'.format(i['image'])
+            url = 'https://mezonn.ru/template/crop/img.php?src=https://mezonn.ru/template/images/{}'.format(i['image'])
             yrl_image = etree.SubElement(offer, 'image')
             yrl_image.text = url
     except:

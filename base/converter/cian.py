@@ -390,7 +390,7 @@ def generate_yrl(db):
             images = json.loads(attrs.get('object-images', ''))
             photos = etree.SubElement(offer, 'Photos')
             for i in images:
-                url = 'http://mezonn.ru/template/images/{}'.format(i['image'])
+                url = 'https://mezonn.ru/template/crop/img.php?src=https://mezonn.ru/template/images/{}'.format(i['image'])
                 photo_schema = etree.SubElement(photos, 'PhotoSchema')
                 full_url = etree.SubElement(photo_schema, 'FullUrl')
                 full_url.text = url
